@@ -1,0 +1,88 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<style>
+    .StatContainer {
+        margin-top: 20px;
+
+    }
+    .HashtagContainer {
+        margin-top: 10px;
+
+    }
+    .TweetTotal {
+        padding-left: 20px;
+    }
+
+</style>
+<h3>Twitter Top 10 Hashtag Monitor</h3>
+<p>From here you can monitor the top 10 twitter hashtags.</p>
+
+<button type="button" id="StartButton" mode="start" class="btn btn-outline-primary" onclick="pageActions.WatchClick()">Start Watching</button>
+
+<div id="statsContainer" class="StatContainer">
+    <div id="TotalTweets" class="TweetTotal"></div>
+    <div id="Hashtags" class="HashtagContainer"></div>    
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+<script>
+    var pageActions = {};
+
+    (function ($, actions) {
+
+        let reqIntervalId = 0;
+
+        actions.WatchClick = function(e) {
+            let btn = $("#StartButton");
+            let mode = btn.attr("mode");
+            if(btn.attr("mode") === "start"){
+                btn.text("Stop Watching");
+                reqIntervalId = setInterval(this.onRequestStats, 2000);
+                btn.attr("mode","stop");
+            }
+            else {
+                clearInterval(reqIntervalId);
+                btn.text("Start Watching");
+                btn.attr("mode","start");
+            }
+        };
+
+        actions.onRequestStats = function(e) {
+            $.ajax({
+                url: 'api/HashtagStats',
+                type: 'GET',
+                contentType: 'application/json',
+                dataType: 'json'
+            })
+                .done(function (resp) {
+                    setTimeout(function () { 
+                        actions.RenderStats(resp); 
+                    }, 100);
+                })
+                .fail(function (resp) {
+                    console.log(resp);
+                });
+        };
+
+        actions.RenderStats = function(stats) {
+            $("#TotalTweets").text("Total tweets: " + stats.totalTweetCount);
+            
+            if(stats.hashtags.length > 0) {
+                let html = "<ol>";
+
+                stats.hashtags.forEach(function(hashtag) {
+                    html += "<li>(" + hashtag.count + ") " + hashtag.tag + "</li>";
+                });
+
+                html += "</ol>";
+
+                $("#Hashtags").html(html);
+            }
+        };
+
+    })(window.jQuery, pageActions);
+
+</script>
